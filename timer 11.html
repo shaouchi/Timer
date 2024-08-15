@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work & Study Timer</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        .timer-container {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 100%;
+            animation: fadeIn 1s ease-in-out;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 25px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .time {
+            font-size: 60px;
+            margin: 20px 0;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+
+        .buttons {
+            margin: 30px 0;
+        }
+
+        .buttons button {
+            background-color: #ff7675;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 30px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .buttons button:hover {
+            background-color: #d63031;
+            transform: translateY(-3px);
+        }
+
+        .session-controls {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            color: #fff;
+        }
+
+        .session-controls div {
+            text-align: center;
+        }
+
+        .session-controls label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .session-controls input {
+            width: 70px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            background-color: #2d3436;
+            color: white;
+            transition: border-color 0.3s ease;
+        }
+
+        .session-controls input:focus {
+            border-color: #00cec9;
+            outline: none;
+        }
+
+        .notification {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .notification.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div class="timer-container">
+        <h1>Focus Timer</h1>
+        <div class="time" id="time">25:00</div>
+        <div class="buttons">
+            <button onclick="startTimer()">Start</button>
+            <button onclick="resetTimer()">Reset</button>
+        </div>
+        <div class="session-controls">
+            <div>
+                <label for="work-duration">Work (min)</label>
+                <input type="number" id="work-duration" value="25">
+            </div>
+            <div>
+                <label for="break-duration">Break (min)</label>
+                <input type="number" id="break-duration" value="5">
+            </div>
+        </div>
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <!-- Sound Effects -->
+    <audio id="bellSound" src="Bell Ding Sound EFFECT.mp3"></audio>
+    <audio id="breakSound" src="Bell Ding Sound EFFECT.mp3"></audio>
+
+    <script>
+        let timer;
+        let isWorkSession = true;
+        let timeLeft = 1500; // Default to 25 minutes
+        const timeDisplay = document.getElementById('time');
+        const bellSound = document.getElementById('bellSound');
+        const breakSound = document.getElementById('breakSound');
+        const notification = document.getElementById('notification');
+
+        function startTimer() {
+            const workDuration = parseInt(document.getElementById('work-duration').value) * 60;
+            const breakDuration = parseInt(document.getElementById('break-duration').value) * 60;
+
+            if (timer) clearInterval(timer);
+
+            timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    isWorkSession = !isWorkSession;
+                    timeLeft = isWorkSession ? workDuration : breakDuration;
+                    if (isWorkSession) {
+                        breakSound.play();
+                        showNotification('Time to work!');
+                    } else {
+                        bellSound.play();
+                        showNotification('Time for a break!');
+                    }
+                }
+                updateDisplay();
+                timeLeft--;
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            isWorkSession = true;
+            timeLeft = parseInt(document.getElementById('work-duration').value) * 60;
+            updateDisplay();
+            hideNotification();
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timeDisplay.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(hideNotification, 3000);
+        }
+
+        function hideNotification() {
+            notification.classList.remove('show');
+        }
+
+        resetTimer(); // Initialize the timer display
+    </script>
+
+</body>
+</html>
